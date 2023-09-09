@@ -1,74 +1,44 @@
+from flask import Flask, jsonify, request, send_file, url_for  # 서버 구현을 위한 Flask 객체 import
+from flask_restx import Api, Resource  # Api 구현을 위한 Api 객체 import
+from segmentation import segmentation
+from werkzeug.utils import secure_filename
 import os
-import urllib
-from typing import Tuple
-
+import base64
 import cv2
-import numpy as np
-import torch
-from PIL import Image
 
-from segment_anything import SamPredictor, sam_model_registry
-CHECKPOINT_PATH = os.path.join("checkpoint")
+app = Flask(__name__)  # Flask 객체 선언, 파라미터로 어플리케이션 패키지의 이름을 넣어줌.
+api = Api(app)  # Flask 객체에 Api 객체 등록
+seg = segmentation()
 
-# # large model
-# CHECKPOINT_NAME = "sam_vit_h_4b8939.pth"
-# CHECKPOINT_URL = "https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth"
+@api.route('/hello')  # 데코레이터 이용, '/hello' 경로에 클래스 등록
+class HelloWorld(Resource):
+    def get(self):  # GET 요청시 리턴 값에 해당 하는 dict를 JSON 형태로 반환
+        return {"hello": "world!"}
+    
+@app.route('/segment', methods=['POST'])
+def predict():
+    if request.method == 'POST':
+        imgFile = request.files["image"]
+        imgFileName = secure_filename(imgFile.filename)
 
-# small model
-CHECKPOINT_NAME = "sam_vit_b_01ec64.pth"
-CHECKPOINT_URL = "https://dl.fbaipublicfiles.com/segment_anything/sam_vit_b_01ec64.pth"
-MODEL_TYPE = "vit_b"
+        savePath = "/static/"
+        os.makedirs(savePath, exist_ok=True)
 
-# graphic card check
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-print(DEVICE)
+        imgPath = os.path.join(savePath, imgFileName)
 
-if not os.path.exists(CHECKPOINT_PATH):
-    os.makedirs(CHECKPOINT_PATH, exist_ok=True)
-checkpoint = os.path.join(CHECKPOINT_PATH, CHECKPOINT_NAME)
-if not os.path.exists(checkpoint):
-    urllib.request.urlretrieve(CHECKPOINT_URL, checkpoint)
-sam = sam_model_registry[MODEL_TYPE](checkpoint=checkpoint).to(DEVICE)
+        imgFile.save(imgPath)
 
+        pointX = request.form['pointX']
+        pointY = request.form['pointY']
 
-predictor = SamPredictor(sam)
-img_path = './test_images/3.jpg'
-point_w = 2600
-point_h = 1200
+        segmentedImg = seg.onePointSegment(imgPath, pointX, pointY)
+        
+        segmentedImgPath = os.path.join(savePath, "segmentedImg.jpeg")
+        segmentedImg.save(segmentedImgPath)
 
-# # 이미지 출력방법 1
-# img = Image.open(img_path)
-# img
+        # print(url_for('static', filename = 'segmentedImg.jpeg'))
 
-# # 이미지 출력방법 2
-# from google.colab.patches import cv2_imshow
-# img = cv2.imread(img_path)
-# cv2_imshow(img)
-
-# 이미지 전처리
-img = Image.open(img_path)
-numpydata = np.asarray(img)
-
-points_coords = np.array([[point_w, point_h], [0, 0]])
-points_label = np.array([1, -1])
-
-# 예측
-predictor.set_image(numpydata)
-masks, scores, _ = predictor.predict(points_coords, points_label)
-
-
-# 출력
-import matplotlib.pyplot as plt
-plt.figure(figsize=(20, 15))
-plt.subplot(2, 3, 1) # subplot
-plt.scatter(point_w, point_h, c = 'red')
-plt.imshow(img)
-
-for i in range(3):
-  mask = Image.fromarray(masks[i])
-  plt.subplot(2, 3, 4+i)
-  plt.title(f"score: { scores[i] }")
-  plt.scatter(point_w, point_h, c = 'red')
-  plt.imshow(img)
-  plt.imshow(mask, alpha = 0.5)
-plt.show()
+        return send_file(segmentedImgPath,  mimetype='image/jpeg', as_attachment=True)
+    
+if __name__ == "__main__":
+    app.run(debug=True)
