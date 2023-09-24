@@ -17,8 +17,12 @@ cd DecorDetector-AiEnd
 pip install -r requirements.txt
 ```
 
-to run api server run app.py
-it will provide two endpoints which is `/segment` and `/vectorize`. `/segment`is for remove background from an image. It works on [Segment-Anything model](https://github.com/facebookresearch/segment-anything) and An image file, pointX, and pointY are required as parameters. `/vectorize` works on Resnet50 model, and it vectorizes an image. An image file is required as parameters. 
+## Run api server
+
+It will provide two endpoints which is `/segment` and `/vectorize`. `/segment`is for remove background from an image. It works on [Segment-Anything model](https://github.com/facebookresearch/segment-anything) and An image file, pointX, and pointY are required as parameters. `/vectorize` works on Resnet50 model, and it vectorizes an image. An image file is required as parameters. 
+
+Run api server: 
+
 ```
 python app.py
 ```
