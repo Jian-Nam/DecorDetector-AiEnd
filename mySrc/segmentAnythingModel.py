@@ -10,9 +10,7 @@ from PIL import Image
 from segment_anything import SamPredictor, sam_model_registry
 import matplotlib.pyplot as plt
 
-from getValidArea import getValidArea
-
-class segmentation:
+class segmentAnythingModel:
 
     def __init__(self):
         # # large model
@@ -38,6 +36,12 @@ class segmentation:
 
         self.sam = sam_model_registry[MODEL_TYPE](checkpoint=checkpoint).to(DEVICE)
 
+    def getValidArea(self, ndarray):
+        row, col = np.where(ndarray == True)
+        minRow, maxRow = row.min(), row.max()
+        minCol, maxCol = col.min(), col.max()
+        return [minRow, maxRow, minCol, maxCol]
+
 
     def onePointSegment(self, imgPath, point_x, point_y):
         predictor = SamPredictor(self.sam)
@@ -60,7 +64,7 @@ class segmentation:
         max_index = 0
 
         # 크롭을 위한 범위 측정
-        minRow, maxRow, minCol, maxCol = getValidArea(masks[max_index])
+        minRow, maxRow, minCol, maxCol = self.getValidArea(masks[max_index])
 
         # datatype boolean -> unit 8, true -> 255
         binary_1ch = np.asarray(masks[max_index], dtype="uint8") * 255
