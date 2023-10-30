@@ -36,3 +36,7 @@ class resnetModel:
         category_name = self.weights.meta["categories"][class_id]
         return [category_name, score]
 
+# res = resnetModel()
+# result = res.vectorize("D:/NJA/2023_ComputerEngineering_Project1/segment-anything/mySrc/3.jpg")
+# print("length:" +  str(len(result)))
+# print("type:" +  str(type(result[0])))
