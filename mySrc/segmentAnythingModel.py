@@ -80,7 +80,8 @@ class segmentAnythingModel:
         cropped_array = masked_array[minRow:maxRow, minCol:maxCol, 0:4]
 
         # np array -> image
-        masked_img = Image.fromarray(cropped_array)
+        channel_flipped = np.flip(cropped_array, axis=2)
+        masked_img = Image.fromarray(channel_flipped)
 
         return masked_img
 
